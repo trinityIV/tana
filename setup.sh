@@ -29,13 +29,26 @@ check_command() {
     fi
 }
 
+# Vérifie quelle commande docker-compose est disponible
+get_compose_cmd() {
+    if command -v docker-compose &> /dev/null; then
+        echo "docker-compose"
+    elif docker compose version &> /dev/null; then
+        echo "docker compose"
+    else
+        print_error "Ni docker-compose ni docker compose n'est disponible"
+        exit 1
+    fi
+}
+
 # Vérification des dépendances
 check_dependencies() {
     print_header "Vérification des dépendances"
     check_command docker
-    check_command docker-compose
-    check_command unzip
-    print_success "Toutes les dépendances sont installées"
+    
+    # Vérifier docker-compose ou docker compose
+    COMPOSE_CMD=$(get_compose_cmd)
+    print_success "Docker et $(echo $COMPOSE_CMD) sont installés"
 }
 
 # Extraction du fichier zip
@@ -92,7 +105,8 @@ configure_system() {
 # Construction de l'image Docker
 build_docker() {
     print_header "Construction de l'image Docker"
-    docker-compose build
+    COMPOSE_CMD=$(get_compose_cmd)
+    $COMPOSE_CMD build
     if [ $? -eq 0 ]; then
         print_success "Image Docker construite avec succès"
     else
@@ -104,10 +118,11 @@ build_docker() {
 # Démarrage du service
 start_service() {
     print_header "Démarrage du service"
-    docker-compose up -d
+    COMPOSE_CMD=$(get_compose_cmd)
+    $COMPOSE_CMD up -d
     if [ $? -eq 0 ]; then
         print_success "Service démarré avec succès"
-        docker-compose ps
+        $COMPOSE_CMD ps
     else
         print_error "Erreur lors du démarrage du service"
         exit 1
@@ -117,7 +132,8 @@ start_service() {
 # Arrêt du service
 stop_service() {
     print_header "Arrêt du service"
-    docker-compose down
+    COMPOSE_CMD=$(get_compose_cmd)
+    $COMPOSE_CMD down
     if [ $? -eq 0 ]; then
         print_success "Service arrêté avec succès"
     else
@@ -131,7 +147,8 @@ clean_all() {
     print_header "Nettoyage complet"
     
     # Arrêter les conteneurs
-    docker-compose down
+    COMPOSE_CMD=$(get_compose_cmd)
+    $COMPOSE_CMD down
     
     # Supprimer les images
     echo "Suppression des images Docker..."
@@ -151,7 +168,8 @@ clean_all() {
 # Affichage des logs
 show_logs() {
     print_header "Logs du service"
-    docker-compose logs -f
+    COMPOSE_CMD=$(get_compose_cmd)
+    $COMPOSE_CMD logs -f
 }
 
 # Menu principal
